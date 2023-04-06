@@ -1,24 +1,22 @@
 package com.example.assemblychain
 
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.ReceiveChannel
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 
 class Worker1 {
-    private val unitsChannel = Channel<Int>()
+    private val units = mutableListOf<Deferred<Int>>()
     suspend fun doWork(){
-        repeat(5){
-            makeUnits()
-            unitsChannel.send(makeUnits())
+            units.add(makeUnitsAsync())
             delay(3000)
-        }
-        unitsChannel.close()
     }
-    fun makeUnits(): Int {
-        return (3..21).random()
+    private fun makeUnitsAsync(): Deferred<Int> {
+        return CoroutineScope(Dispatchers.Default).async {
+            (3..21).random()
+        }
     }
 
-    fun sendUnitsChannel(): ReceiveChannel<Int> {
-        return unitsChannel
+    fun sendUnitsAsync(): Deferred<Int> {
+        val dataToReturn = units.first()
+        units.remove(dataToReturn)
+        return dataToReturn
     }
 }

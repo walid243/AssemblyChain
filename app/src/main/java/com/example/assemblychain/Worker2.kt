@@ -1,34 +1,31 @@
 package com.example.assemblychain
 
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.ReceiveChannel
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 
 class Worker2 {
 
-    private val packetChannel = Channel<Int>()
+    private val packetChannel = mutableListOf<Deferred<Int>>()
+    var accumulatedPrimeMaterials = 0
 
-    suspend fun doWork(primeMaterialsChannel: ReceiveChannel<Int>){
-        var accumulatedPrimeMaterials = 0
-        for (primeMaterials in primeMaterialsChannel){
+    suspend fun doWork(primeMaterials: Int){
             accumulatedPrimeMaterials += primeMaterials
             if (accumulatedPrimeMaterials >= 4){
                 val packets = accumulatedPrimeMaterials / 4
                 repeat(packets){
-                    packetChannel.send(4)
+                    packetChannel.add(CoroutineScope(Dispatchers.Default).async { 4 })
                 }
                 accumulatedPrimeMaterials %= 4
                 delay(1000)
         }
-    }
         if (accumulatedPrimeMaterials > 0){
-            packetChannel.send(accumulatedPrimeMaterials)
+            packetChannel.add(CoroutineScope(Dispatchers.Default).async { accumulatedPrimeMaterials })
         }
-        packetChannel.close()
     }
 
-    fun getPacketChannel(): ReceiveChannel<Int> {
-        return packetChannel
+    fun getPacketAsync(): Deferred<Int> {
+        val dataToReturn = packetChannel.first()
+        packetChannel.remove(dataToReturn)
+        return dataToReturn
     }
 
 

@@ -1,20 +1,22 @@
 package com.example.assemblychain
 
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
 
 class Worker3 {
-    private val containerChannel = Channel<Int>()
+    private val containers = mutableListOf<Deferred<Int>>()
 
     suspend fun doWork(){
         val positions = (2..4).random()
         val fabricationDelay = (10000..20000).random()
         delay(fabricationDelay.toLong())
-        containerChannel.send(positions)
-        containerChannel.close()
+        containers.add(CoroutineScope(Dispatchers.Default).async { positions })
     }
 
-    fun getContainerChannel(): Channel<Int> {
-        return containerChannel
+    fun getContainerAsync(): Deferred<Int> {
+        val dataToReturn = containers.first()
+        containers.remove(dataToReturn)
+
+        return dataToReturn
     }
 }
